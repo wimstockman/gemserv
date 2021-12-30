@@ -7,6 +7,7 @@ use url::Url;
 #[cfg(any(feature = "cgi", feature = "scgi"))]
 use crate::cgi;
 use crate::conn;
+use crate::lib;
 use crate::logger;
 #[cfg(feature = "proxy")]
 use crate::revproxy;
@@ -31,6 +32,28 @@ fn get_mime(path: &Path) -> String {
     };
 
     mime
+}
+
+fn set_mime(mime: String, con: &conn::Connection, url: &url::Url) -> String {
+    let mut mm = lib::mime::Mime::new();
+    mm.set_mime(&mime);
+    if let Some(l) = &con.srv.server.lang {
+        mm.set_lang(l);
+    }
+    if let Some(l) = &con.srv.server.locations {
+        for m in l {
+            if m.location.is_match(url.path()) {
+                if let Some(cs) = &m.charset {
+                    mm.set_cs(cs);
+                }
+                if let Some(lng) = &m.lang {
+                    mm.set_lang(lng);
+                }
+                log::debug!("location: {}\tmime: {}", m.location, mm);
+            }
+        }
+    }
+    mm.to_string()
 }
 
 async fn get_binary(mut con: conn::Connection, path: PathBuf, meta: String) -> io::Result<()> {
@@ -308,25 +331,11 @@ pub async fn handle_connection(mut con: conn::Connection, url: url::Url) -> Resu
 
     let mut mime = get_mime(&path);
     if meta.is_file() {
-        if mime == "text/gemini" && con.srv.server.lang.is_some() {
-            mime += &("; lang=".to_string() + &con.srv.server.lang.to_owned().unwrap());
-        }
-        if !mime.starts_with("text/") {
-            logger::logger(con.peer_addr, Status::Success, url.as_str());
-            get_binary(con, path, mime).await?;
-            return Ok(());
-        }
-        match fs::read_to_string(path).await {
-            Ok(c) => {
-                con.send_body(Status::Success, Some(&mime), Some(c)).await?;
-                logger::logger(con.peer_addr, Status::Success, url.as_str());
-            }
-            Err(e) => {
-                println!("{}", e);
-                con.send_status(Status::NotFound, None).await?;
-                logger::logger(con.peer_addr, Status::NotFound, url.as_str());
-            }
-        }
+        mime = set_mime(mime, &con, &url);
+
+        logger::logger(con.peer_addr, Status::Success, url.as_str());
+        get_binary(con, path, mime).await?;
+        return Ok(());
     } else {
         let dir = gen_dir_list(path, &url).await?;
         con.send_body(Status::Success, Some(&mime), Some(dir))

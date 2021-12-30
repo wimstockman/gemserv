@@ -7,6 +7,7 @@ pub fn init(loglev: &Option<String>) -> errors::Result {
     let loglev = match loglev {
         None => log::LevelFilter::Info,
         Some(l) => match l.as_str() {
+            "debug" => log::LevelFilter::Debug,
             "error" => log::LevelFilter::Error,
             "warn" => log::LevelFilter::Warn,
             "info" => log::LevelFilter::Info,

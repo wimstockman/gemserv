@@ -1,5 +1,6 @@
 pub mod conn;
 pub mod errors;
+pub mod mime;
 pub mod server;
 pub mod status;
 pub mod tls;

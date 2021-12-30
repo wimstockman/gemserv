@@ -1,4 +1,5 @@
 extern crate serde_derive;
+extern crate serde_regex;
 extern crate toml;
 use crate::lib::errors;
 use std::collections::HashMap;
@@ -10,6 +11,15 @@ use tokio::fs;
 use tokio::io;
 
 type Result<T = ()> = std::result::Result<T, Box<dyn std::error::Error + Send + Sync>>;
+
+#[derive(Debug, Deserialize, Clone)]
+pub struct Location {
+    #[serde(with = "serde_regex")]
+    pub location: regex::Regex,
+    pub lang: Option<String>,
+    pub meta: Option<String>,
+    pub charset: Option<String>,
+}
 
 #[derive(Debug, Deserialize, Clone)]
 pub struct Config {
@@ -28,6 +38,7 @@ pub struct Server {
     pub cert: String,
     pub index: Option<String>,
     pub lang: Option<String>,
+    pub locations: Option<Vec<Location>>,
     #[cfg(feature = "cgi")]
     pub cgi: Option<bool>,
     #[cfg(feature = "cgi")]

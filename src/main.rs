@@ -33,7 +33,7 @@ async fn run(mut recv: watch::Receiver<bool>) -> errors::Result {
         // This will error because log init only wants to be called once.
         // On reload it will allow going from higher to lower logging levels
         // however trying to go from a lower lever to higher won't change.
-        if let Err(_) = logger::init(&cfg.log) {}
+        if logger::init(&cfg.log).is_err() {}
 
         let cmap = cfg.to_map();
         log::info!("Serving {} vhosts", cfg.server.len());
@@ -86,7 +86,7 @@ async fn main() -> errors::Result {
     let (send, recv) = watch::channel(true);
     tokio::spawn(async move {
         signal_select(send).await?;
-        return Ok(()) as errors::Result;
+        Ok(()) as errors::Result
     });
     run(recv).await?;
     Ok(())
