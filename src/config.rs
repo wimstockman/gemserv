@@ -84,6 +84,12 @@ impl Config {
             Err(e) => return Err(Box::new(e)),
         };
 
+        // We do this to convert u labels to a labels
+        for mut srv in &mut config.server {
+            let alabel = idna::domain_to_ascii(&srv.hostname)?;
+            srv.hostname = alabel;
+        }
+
         if config.host.is_some() || config.port.is_some() {
             eprintln!(
                 "The host/port keys are depricated in favor \

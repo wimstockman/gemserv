@@ -41,9 +41,20 @@ usrdir = true
 proxy = { path = "localhost:1966" }
 # proxy_all is optional
 # It will send all requests to the specified server. It also supports streamming.
-proxy_all = "localhost:1967"
+proxy_all = "localhost:1967"g
 # redirect is optional
 redirect = { "/redirect" = "/", "/newdomain" = "gemini://example.net" }
+# locations is optional
+# If used the "location" tag is the only one that's mandatory. You can mix and
+# match "lang" and "charset" It uses every tag that matches starting from the
+# to the bottom with each one down overriding the previous. Set log level to
+# debug to watch it.
+locations = [
+        { location = "/es/*", lang = "es" },
+        { location = "/it/*", charset = "utf-8", lang = "it" },
+        { location = "/*.ans", charset = "CP437" },
+        { location = "/it/test/*", charset = "utf-8", lang = "fr" },
+]
 
 # Server 2
 [[server]]

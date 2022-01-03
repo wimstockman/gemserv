@@ -15,8 +15,9 @@ use tokio_rustls::rustls;
 use tokio_rustls::TlsAcceptor;
 
 use crate::config;
+use crate::errors;
 
-pub fn tls_acceptor_conf(cfg: config::Config) -> io::Result<TlsAcceptor> {
+pub fn tls_acceptor_conf(cfg: config::Config) -> errors::Result<TlsAcceptor> {
     let resolver = load_keypair(cfg)?;
     let config = rustls::server::ServerConfig::builder()
         .with_safe_defaults()
@@ -39,7 +40,7 @@ fn load_key(path: &str) -> io::Result<Vec<PrivateKey>> {
         .map(|mut keys| keys.drain(..).map(PrivateKey).collect())
 }
 
-fn load_keypair(cfg: config::Config) -> io::Result<ResolvesServerCertUsingSni> {
+fn load_keypair(cfg: config::Config) -> errors::Result<ResolvesServerCertUsingSni> {
     let mut resolver = rustls::server::ResolvesServerCertUsingSni::new();
 
     for server in cfg.server.iter() {
@@ -49,7 +50,7 @@ fn load_keypair(cfg: config::Config) -> io::Result<ResolvesServerCertUsingSni> {
 
         resolver
             .add(
-                &server.hostname.clone(),
+                &server.hostname,
                 CertifiedKey::new(certs, signing_key),
             )
             .expect("error loading key");

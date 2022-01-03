@@ -17,6 +17,7 @@ use crate::conn;
 use crate::errors::{GemError, Result};
 use crate::logger;
 use crate::status::Status;
+use crate::util;
 
 pub trait Handler:
     FnMut(conn::Connection, url::Url) -> Pin<Box<dyn Future<Output = Result> + Send>>
@@ -48,7 +49,7 @@ pub struct Server {
 impl Server {
     pub async fn bind(
         addr: Vec<std::net::SocketAddr>,
-        acceptor: fn(config::Config) -> std::io::Result<TlsAcceptor>,
+        acceptor: fn(config::Config) -> Result<TlsAcceptor>,
         cfg: config::Config,
     ) -> Result<Server> {
         if addr.len() == 1 {
@@ -190,7 +191,17 @@ async fn get_request(mut con: conn::Connection) -> Result<(conn::Connection, url
     };
 
     if let Some(h) = url.host_str() {
-        if con.srv.server.hostname.as_str() != h.to_lowercase() {
+        let h = util::url_decode(h.as_bytes());
+        let hostname = &con.srv.server.hostname;
+        // why am I calling this again if it's already alabel.
+        let alabel = idna::domain_to_ascii(hostname)?;
+        let (ulabel, _err) = idna::domain_to_unicode(hostname);
+        if alabel == h {
+            log::debug!("url matches alabel: {}", alabel);
+        } else if ulabel == h {
+            log::debug!("url matches ulabel: {}", ulabel);
+        } else {
+            log::debug!("url doesn't match a or u label");
             logger::logger(con.peer_addr, Status::ProxyRequestRefused, url.as_str());
             con.send_status(Status::ProxyRequestRefused, None)
                 .await
