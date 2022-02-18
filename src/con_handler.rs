@@ -3,6 +3,7 @@ use std::path::{Path, PathBuf};
 use tokio::fs::{self, File};
 use tokio::io::{self, AsyncBufReadExt, AsyncWrite, BufReader};
 use url::Url;
+use regex::Regex;
 
 #[cfg(any(feature = "cgi", feature = "scgi"))]
 use crate::cgi;
@@ -14,6 +15,7 @@ use crate::status::Status;
 use crate::util;
 
 type Result<T = ()> = std::result::Result<T, Box<dyn std::error::Error + Send + Sync>>;
+
 
 fn get_mime(path: &Path) -> String {
     let mut mime = "text/gemini".to_string();
@@ -246,6 +248,37 @@ pub async fn handle_connection(mut con: conn::Connection, url: url::Url) -> Resu
             let decoded = util::url_decode(url.path().as_bytes()).trim_start_matches('/').to_owned();
             path.push(decoded);
         }
+    }
+
+    match path.canonicalize() {
+        Ok(p) => {
+            if !p.starts_with(&con.srv.server.dir) {
+                if con.srv.server.usrdir.unwrap_or(false) {
+                    #[cfg(target_os = "macos")]
+                    lazy_static! {
+                        static ref RE: Regex = Regex::new(r"^/Users/([^/]*)/public_gemini(.*)").unwrap();
+                    }
+                    #[cfg(not(target_os = "macos"))]
+                    lazy_static! {
+                        static ref RE: Regex = Regex::new(r"^/home/([^/]*)/public_gemini(.*)").unwrap();
+                    }
+                    if !RE.is_match(p.to_str().unwrap()) {
+                        logger::logger(con.peer_addr, Status::NotFound, url.as_str());
+                        con.send_status(Status::NotFound, None).await?;
+                        return Ok(());
+                    }
+                } else {
+                    logger::logger(con.peer_addr, Status::NotFound, url.as_str());
+                    con.send_status(Status::NotFound, None).await?;
+                    return Ok(());
+                }
+            }
+        },
+        Err(_) => {
+            logger::logger(con.peer_addr, Status::NotFound, url.as_str());
+            con.send_status(Status::NotFound, None).await?;
+            return Ok(());
+        },
     }
 
     if !path.exists() {
