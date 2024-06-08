@@ -195,7 +195,7 @@ dependencies = [
 
 [[package]]
 name = "gemserv"
-version = "0.6.6"
+version = "0.6.8"
 dependencies = [
  "futures-util",
  "lazy_static",

@@ -1,6 +1,6 @@
 [package]
 name = "gemserv"
-version = "0.6.7"
+version = "0.6.8"
 authors = ["int 80h <int@80h.dev>"]
 edition = "2018"
 description = "A gemini server"
@@ -36,10 +36,11 @@ optional = false
 features = ["dangerous_configuration"]
 
 [features]
-default = [ "cgi", "scgi", "proxy" ]
+default = [ "cgi", "scgi", "proxy","authlocation" ]
 cgi = []
 scgi = []
 proxy = []
+authlocation = []
 
 [profile.release]
 lto = true

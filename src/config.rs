@@ -28,6 +28,8 @@ pub struct Server {
     pub cert: String,
     pub index: Option<String>,
     pub lang: Option<String>,
+    #[cfg(feature = "authlocation")]
+    pub authlocation: Vec<AuthLocation>,
     #[cfg(feature = "cgi")]
     pub cgi: Option<bool>,
     #[cfg(feature = "cgi")]
@@ -42,6 +44,17 @@ pub struct Server {
     pub redirect: Option<HashMap<String, String>>,
     #[cfg(feature = "scgi")]
     pub scgi: Option<HashMap<String, String>>,
+}
+
+#[cfg(feature = "authlocation")]
+#[derive(Debug, Deserialize, Clone)]
+pub struct AuthLocation {
+    pub auth_basic: String,
+    pub index: Option<String>,
+    pub path: String,
+    pub root: String,
+    #[serde(skip)]
+    pub hashkeys: Vec<String>,
 }
 
 #[derive(Debug, Clone)]
@@ -72,6 +85,29 @@ impl Config {
             Ok(c) => c,
             Err(e) => return Err(Box::new(e)),
         };
+
+        #[cfg(feature = "authlocation")]
+        for serv in &mut config.server {
+            let authlo = &mut serv.authlocation;
+            for authloc in authlo.iter_mut() {
+                let mut kfile = path::PathBuf::new();
+                kfile.push(&authloc.auth_basic);
+                if !kfile.exists() {
+                    return Err(Box::new(errors::GemError(
+                        "Hash table file doesn't exist".to_string(),
+                    )));
+                } else {
+                    let toml_str = fs::read_to_string(kfile).await.unwrap();
+                    let table: toml::Value = toml::from_str(&toml_str)?;
+                    let hashkeys = table["hashkeys"].as_array().ok_or("Hahkeys not found")?;
+                    let hashkeys: Vec<String> = hashkeys
+                        .iter()
+                        .map(|v| v.as_str().unwrap().to_string())
+                        .collect();
+                    authloc.hashkeys = hashkeys.clone();
+                }
+            }
+        }
 
         if config.host.is_some() || config.port.is_some() {
             eprintln!(

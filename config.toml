@@ -45,6 +45,19 @@ proxy_all = "localhost:1967"
 # redirect is optional
 redirect = { "/redirect" = "/", "/newdomain" = "gemini://example.net" }
 
+[[server.authlocation]]
+root = "/path/to/serv/private"
+path = "/private"
+index = "index.gmi"
+# you can place the keys anywhere you want. best not to place them inside your capsule
+auth_basic = "/path/to/private/.hashkeys"
+
+[[server.authlocation]]
+root = "/path/to/serv/private2"
+path = "/private2"
+index = "index.gmi"
+auth_basic = "/path/to/private/.hashkeys-private2"
+
 # Server 2
 [[server]]
 hostname = "example.net"

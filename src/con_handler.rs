@@ -16,7 +16,6 @@ use crate::util;
 
 type Result<T = ()> = std::result::Result<T, Box<dyn std::error::Error + Send + Sync>>;
 
-
 fn get_mime(path: &Path) -> String {
     let mut mime = "text/gemini".to_string();
     if path.is_dir() {
@@ -51,7 +50,6 @@ async fn get_binary(mut con: conn::Connection, path: PathBuf, meta: String) -> i
         }
         reader.consume(len);
     }
-
     futures_util::future::poll_fn(|ctx| std::pin::Pin::new(&mut con.stream).poll_shutdown(ctx))
         .await?;
     Ok(())
@@ -100,6 +98,68 @@ async fn gen_dir_list(path: PathBuf, u: &url::Url) -> Result<String> {
     }
 
     Ok(list)
+}
+//Handle Certificate Protected Parts like basic auth for http
+#[cfg(feature = "authlocation")]
+async fn handle_authlocations(con: &mut conn::Connection, url: &Url) -> Result<bool> {
+    let vec_authlocs = &con.srv.server.authlocation;
+    for item in vec_authlocs {
+        if url.path().starts_with(&item.path) {
+            logger::logger(
+                con.peer_addr,
+                Status::Success,
+                "Auth Started with right path",
+            );
+            let (_, session) = con.stream.get_ref();
+            if let Some(cert) = session.peer_certificates() {
+                let cert = tokio_rustls::rustls::Certificate::as_ref(&cert[0]);
+                if let Ok((_, _)) = x509_parser::parse_x509_certificate(cert) {
+                    let clienthash = util::fingerhex(cert);
+                    for hashkey in &item.hashkeys {
+                        if clienthash == *hashkey {
+                            logger::logger(con.peer_addr, Status::Success, "found the hash key");
+                            logger::logger(
+                                con.peer_addr,
+                                Status::Success,
+                                util::fingerhex(cert).as_str(),
+                            );
+                            return Ok(false);
+                        }
+                    }
+                    logger::logger(
+                        con.peer_addr,
+                        Status::AuthorisedCertificateRequired,
+                        "Hashkey not found",
+                    );
+                    logger::logger(
+                        con.peer_addr,
+                        Status::Success,
+                        util::fingerhex(cert).as_str(),
+                    );
+                    con.send_status(Status::AuthorisedCertificateRequired, None)
+                        .await?;
+                    return Ok(true);
+                }
+                logger::logger(
+                    con.peer_addr,
+                    Status::AuthorisedCertificateRequired,
+                    "Failed Cert",
+                );
+                con.send_status(Status::AuthorisedCertificateRequired, None)
+                    .await?;
+                return Ok(true);
+            }
+            logger::logger(
+                con.peer_addr,
+                Status::AuthorisedCertificateRequired,
+                "No Cert found ",
+            );
+            con.send_status(Status::AuthorisedCertificateRequired, None)
+                .await?;
+            return Ok(true);
+        }
+    }
+    return Ok(false);
 }
 
 // Handle CGI and return Ok(true), or indicate this request wasn't for CGI with Ok(false)
@@ -221,6 +281,11 @@ pub async fn handle_connection(mut con: conn::Connection, url: url::Url) -> Resu
         }
         None => {}
     }
+      
+    #[cfg(feature = "authlocation")]
+    if handle_authlocations(&mut con, &url).await? {
+        return Ok(());
+    }
 
     let mut path = PathBuf::new();
 
@@ -252,7 +317,7 @@ pub async fn handle_connection(mut con: conn::Connection, url: url::Url) -> Resu
 
     match path.canonicalize() {
         Ok(p) => {
-            if !p.starts_with(&con.srv.server.dir) {
+               if !p.starts_with(&con.srv.server.dir) {
                 if con.srv.server.usrdir.unwrap_or(false) {
                     #[cfg(target_os = "macos")]
                     lazy_static! {
