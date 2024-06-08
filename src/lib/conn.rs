@@ -1,5 +1,4 @@
 use std::io;
-use std::marker::Unpin;
 use std::net::SocketAddr;
 
 use tokio::io::AsyncRead;

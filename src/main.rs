@@ -7,7 +7,14 @@ extern crate lazy_static;
 mod cgi;
 mod con_handler;
 mod config;
-mod lib;
+mod lib { 
+pub mod conn;
+pub mod errors;
+pub mod server;
+pub mod status;
+pub mod tls;
+pub mod util;
+}
 mod logger;
 #[cfg(feature = "proxy")]
 mod revproxy;
