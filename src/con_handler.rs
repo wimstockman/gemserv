@@ -190,16 +190,18 @@ async fn handle_cgi(
         let perm = meta.permissions();
 
         match &con.srv.server.cgipath {
-            Some(c) => {
-                if path.starts_with(c) {
-                    if perm.mode() & 0o0111 == 0o0111 {
-                        cgi::cgi(con, path, url, script_name, path_info).await?;
-                        return Ok(true);
-                    } else {
-                        logger::logger(con.peer_addr, Status::CGIError, request);
-                        con.send_status(Status::CGIError, None).await?;
-                        return Ok(true);
-                    }
+            Some(value) => {
+                for c in value.iter(){
+                    if path.starts_with(c) {
+                        if perm.mode() & 0o0111 == 0o0111 {
+                            cgi::cgi(con, path, url, script_name, path_info).await?;
+                            return Ok(true);
+                        } else {
+                            logger::logger(con.peer_addr, Status::CGIError, request);
+                            con.send_status(Status::CGIError, None).await?;
+                            return Ok(true);
+                        }
+		   }
                 }
             }
             None => {

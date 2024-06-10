@@ -1,8 +1,8 @@
 [package]
 name = "gemserv"
-version = "0.6.8"
-authors = ["int 80h <int@80h.dev>"]
-edition = "2018"
+version = "0.6.9"
+authors = ["int 80h <int@80h.dev>","Wim Stockman <wim@thinkerwim.org>"]
+edition = "2021"
 description = "A gemini server"
 keywords = ["server", "gemini", "protocol"]
 categories = ["network-programming"]

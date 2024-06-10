@@ -27,9 +27,9 @@ index = "index.gmi"
 lang = "en"
 # cgi is optional bool
 cgi = true
-# cgipath is optional and only checked if cgi is true. It restricts cgi to only
+# cgipath is optional and a array only checked if cgi is true. It restricts cgi to only
 # this directory.
-cgipath = "/path/to/cgi-bin/"
+cgipath = [ "/path/to/cgi-bin/", "/path/to/private/cgi-bin" ]
 # scgi is optional
 scgi = { "/scgi" = "localhost:4000" }
 # cgienv is optional

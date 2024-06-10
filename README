@@ -96,6 +96,11 @@ auth_basic = "/path/to/private/.hashkeys"
 
 ## Changelog
 
+### [0.6.9] - 20240610
+
+Changed the cgipath into a toml array, so you can define more than one CGI directory.
+there is an example in the config.toml file
+
 ### [0.6.8] - 20240610
 
 Added a few cgi-script examples

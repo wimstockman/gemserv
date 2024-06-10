@@ -33,7 +33,7 @@ pub struct Server {
     #[cfg(feature = "cgi")]
     pub cgi: Option<bool>,
     #[cfg(feature = "cgi")]
-    pub cgipath: Option<String>,
+    pub cgipath: Option<Vec<String>>,
     #[cfg(any(feature = "cgi", feature = "scgi"))]
     pub cgienv: Option<HashMap<String, String>>,
     pub usrdir: Option<bool>,
