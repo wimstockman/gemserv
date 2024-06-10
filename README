@@ -76,7 +76,33 @@ TLS variables
  - TLS_CLIENT_HASH
  - REMOTE_USER
 
+### Auth Location
+
+This features adds an access control to a directory path.
+You can create multiple secured location.
+It checks the TLS_CLIENT_HASH of the client certificat to hashkeys saved in a plain text file.
+Check out the config.toml for configuration example.
+Also there is an example how user can subscribe to the auth location in the cgi-scripts directory. 
+Examples is called subscribe.sh
+
+In your toml file you can set this up as :
+[[server.authlocation]]
+root = "/path/to/serv/private"
+path = "/private"
+index = "index.gmi"
+# you can place the keys anywhere you want. best not to place them inside your capsule
+auth_basic = "/path/to/private/.hashkeys"
+
+
 ## Changelog
+
+### [0.6.8] - 20240610
+
+Added a few cgi-script examples
+
+### [0.6.8] - 20240608
+
+Added a new feature: AuthLocation
 
 ### [0.6.6] - 20220217
 
