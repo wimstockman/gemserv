@@ -1,6 +1,6 @@
 [package]
 name = "gemserv"
-version = "0.6.9"
+version = "0.7.0"
 authors = ["int 80h <int@80h.dev>","Wim Stockman <wim@thinkerwim.org>"]
 edition = "2021"
 description = "A gemini server"
@@ -36,11 +36,12 @@ optional = false
 features = ["dangerous_configuration"]
 
 [features]
-default = [ "cgi", "scgi", "proxy","authlocation" ]
+default = [ "cgi", "scgi", "proxy","authlocation","followsymlinks" ]
 cgi = []
 scgi = []
 proxy = []
 authlocation = []
+followsymlinks = []
 
 [profile.release]
 lto = true

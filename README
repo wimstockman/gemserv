@@ -11,6 +11,8 @@ A gemini server written in rust.
  - Redirect
  - SCGI
  - Reload config on SIGHUP
+ - Location protection with Client Certificates -> AuthLocation
+ - Followsymlinks enable/disable
 
 ## Installation and running
 
@@ -95,6 +97,12 @@ auth_basic = "/path/to/private/.hashkeys"
 
 
 ## Changelog
+
+### [0.7.0] - 20240616
+
+Added a feature to follow symlinks, so gemserv can also show symlinks.
+Can be a security risk or can be a nice feature.
+enable or disable it when compiling in your Cargo.toml file.
 
 ### [0.6.9] - 20240610
 

@@ -335,9 +335,23 @@ pub async fn handle_connection(mut con: conn::Connection, url: url::Url) -> Resu
                         return Ok(());
                     }
                 } else {
-                    logger::logger(con.peer_addr, Status::NotFound, url.as_str());
-                    con.send_status(Status::NotFound, None).await?;
-                    return Ok(());
+		    #[cfg(not(feature="followsymlinks"))]
+			{
+			logger::logger(con.peer_addr, Status::NotFound, url.as_str());
+			con.send_status(Status::NotFound, None).await?;
+			return Ok(());
+			}
+		    #[cfg(feature="followsymlinks")]{
+			let linkmeta = tokio::fs::symlink_metadata(&path).await?;
+			if linkmeta.file_type().is_symlink(){
+			    logger::logger(con.peer_addr, Status::Success, "Symlink followed");
+			}
+			else {
+			    logger::logger(con.peer_addr, Status::NotFound, url.as_str());
+			    con.send_status(Status::NotFound, None).await?;
+			    return Ok(());
+			}
+		    }
                 }
             }
         },
